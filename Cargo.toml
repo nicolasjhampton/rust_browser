@@ -1,0 +1,7 @@
+[package]
+name = "rust_browser"
+version = "0.1.0"
+authors = ["Nic Hampton <nicolasjhampton@gmail.com>"]
+edition = "2018"
+
+[dependencies]
