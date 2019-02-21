@@ -15,7 +15,13 @@ mod tests {
 
     #[test]
     fn it_creates_the_correct_tokens() {
-        let source = String::from("<body><div><p>This is a paragraph</p></div></body>");
+        let source = String::from("
+        <body>
+            <div>
+                <p>This is a paragraph</p>
+            </div>
+        </body>
+        ");
         let mut lexer = Lexer::new(&source);
         let answers = vec![
             TOKEN::TAG_START,
