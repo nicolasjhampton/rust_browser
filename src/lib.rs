@@ -69,11 +69,6 @@ mod tests {
         for (idx, token) in lexer.enumerate() {
             assert_eq!(token, answers[idx]);
         }
-        // let mut i = 0;
-        // while let Some(cur_token) = lexer.next_token() {
-        //     assert_eq!(cur_token, answers[i]);
-        //     i += 1;
-        // }
     }
 
     #[test]

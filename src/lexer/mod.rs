@@ -51,7 +51,7 @@ impl<'a> Iterator for Lexer<'a> {
         }
     }
 }
-
+//  &'a String
 impl<'a> Lexer<'a> {
     pub fn new<'b>(source: &'b String) -> Lexer<'b> {
         let chars = source.chars().peekable();
@@ -62,7 +62,7 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn from<'b>(path: &str, string: &'b mut String) -> Result<Lexer<'b>, std::io::Error> {
-        match File::open(path) {
+        match File::open(path) { //"src/lexer/index.html"
             Ok(mut source) => {
                 match source.read_to_string(string) {
                     Ok(_) => {
