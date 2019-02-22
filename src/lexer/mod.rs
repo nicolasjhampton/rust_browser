@@ -4,13 +4,23 @@ use std::iter::Peekable;
 #[derive(Debug)]
 #[derive(PartialEq)]
 pub enum TOKEN {
-    TAG_START,
-    TAG_NAME(String),
-    END_TAG_START,
+    TAG_START(String),
+    END_TAG_START(String),
     TAG_END,
     SINGLE_TAG_END,
-    ATTR(String, String),
+    ATTR((String, String)),
+    BOOL_ATTR(String),
     TEXT(String)
+}
+
+pub fn format_attr(attribute: String) -> (String, String) {
+    let pair: Vec<&str> = attribute.splitn(2, "=").collect();
+    let key = String::from(pair[0]);
+    let value = pair[1]
+        .trim_start_matches("\"") // escape quotes
+        .trim_end_matches("\"") // escape quotes
+        .to_string();
+    (key, value)
 }
 
 pub struct Lexer<'a> {
@@ -32,25 +42,44 @@ impl<'a> Lexer<'a> {
             Some('<') => {
                 self.inner_tag = true;
                 // TAG_START or END_TAG_START
-                if let Some(true) = self.is_next(vec!['/']) {
+                if let Some(true) = self.is_next(&vec!['/']) {
                     self.source.next();
-                    return Some(TOKEN::END_TAG_START)
+                    let string = self.collect_until(' ', vec![' ', '>']);
+                    return Some(TOKEN::END_TAG_START(string))
                 }
-                Some(TOKEN::TAG_START)
+                let string = self.collect_until(' ', vec![' ', '>']);
+                Some(TOKEN::TAG_START(string))
             },
             Some('>') => {
                 self.inner_tag = false;
                 // TAG_END
                 Some(TOKEN::TAG_END)
             },
+            Some('/') => {
+                // SINGLE_TAG_END
+                if let Some(true) = self.is_next(&vec!['>']) {
+                    self.source.next();
+                    self.inner_tag = false;
+                    return Some(TOKEN::SINGLE_TAG_END)
+                }
+                None
+            },
             Some(character) => {
                 // TAG_NAME, ATTR, or TEXT
                 match self.inner_tag {
                     // TEXT
-                    false => self.collect_text(character),
+                    false => {
+                        let string = self.collect_until(character, vec!['<']);
+                        Some(TOKEN::TEXT(string))
+                    },
                     true => {
-                        // TAG_NAME or ATTR
-                        self.collect_inner_tag(character)
+                        // ATTR or BOOL_ATTR
+                        let string = self.collect_until(character, vec![' ', '>']);
+                        if string.contains("=") {
+                            Some(TOKEN::ATTR(format_attr(string)))
+                        } else {
+                            Some(TOKEN::BOOL_ATTR(string))
+                        }
                     }
                 }
             },
@@ -74,33 +103,22 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn is_next(&mut self, comp: Vec<char>) -> Option<bool> {
+    pub fn is_next(&mut self, comp: &Vec<char>) -> Option<bool> {
         match self.source.peek() {
             Some(value) => Some(comp.contains(value)),
             None => None
         }
     }
 
-    pub fn collect_text(&mut self, character: char) -> Option<TOKEN> {
-        let mut string = character.to_string();
-        while let Some(false) = self.is_next(vec!['<']) {
-            string.push(self.pop_char().unwrap_or_default())
-        }
-        Some(TOKEN::TEXT(string))
-    }
-
-    pub fn collect_inner_tag(&mut self, character: char) -> Option<TOKEN> {
-        let mut string = character.to_string();
-        while let Some(false) = self.is_next(vec![' ', '>']) {
-            string.push(self.pop_char().unwrap_or_default())
-        }
-        if string.contains("=") {
-            let pair: Vec<&str> = string.splitn(2, "=").collect();
-            let key = String::from(pair[0]);
-            let value = String::from(pair[1]);
-            Some(TOKEN::ATTR(key, value))
+    pub fn collect_until(&mut self, character: char, end_chars: Vec<char>) -> String {
+        let mut string: String = if character == ' ' {
+            String::new()
         } else {
-            Some(TOKEN::TAG_NAME(string))
+            character.to_string()
+        };
+        while let Some(false) = self.is_next(&end_chars) {
+            string.push(self.pop_char().unwrap_or_default())
         }
+        string
     }
 }
