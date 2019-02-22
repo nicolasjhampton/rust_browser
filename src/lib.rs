@@ -106,7 +106,7 @@ mod tests {
             TOKEN::TAG_END
         ];
         let mut source = String::new();
-        let path = "src/lexer/index.html";
+        let path = "src/index.html";
         if let Ok(mut lexer) = Lexer::from(path, &mut source) {
             for token in lexer {
                 println!("{:?}", token);
