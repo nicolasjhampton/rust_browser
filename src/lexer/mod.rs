@@ -39,51 +39,59 @@ impl<'a> Lexer<'a> {
 
     pub fn next_token(&mut self) -> Option<TOKEN> {
         match self.eat_whitespace() {
-            Some('<') => {
-                self.inner_tag = true;
-                // TAG_START or END_TAG_START
-                if let Some(true) = self.is_next(&vec!['/']) {
-                    self.source.next();
-                    let string = self.collect_until(' ', vec![' ', '>']);
-                    return Some(TOKEN::END_TAG_START(string))
-                }
-                let string = self.collect_until(' ', vec![' ', '>']);
-                Some(TOKEN::TAG_START(string))
-            },
-            Some('>') => {
-                self.inner_tag = false;
-                // TAG_END
-                Some(TOKEN::TAG_END)
-            },
-            Some('/') => {
-                // SINGLE_TAG_END
-                if let Some(true) = self.is_next(&vec!['>']) {
-                    self.source.next();
-                    self.inner_tag = false;
-                    return Some(TOKEN::SINGLE_TAG_END)
-                }
-                None
-            },
+            Some('<') => self.create_tag_name(),
+            Some('>') => self.create_tag_end(), 
+            Some('/') => self.create_single_tag_end(),
             Some(character) => {
-                // TAG_NAME, ATTR, or TEXT
                 match self.inner_tag {
-                    // TEXT
-                    false => {
-                        let string = self.collect_until(character, vec!['<']);
-                        Some(TOKEN::TEXT(string))
-                    },
-                    true => {
-                        // ATTR or BOOL_ATTR
-                        let string = self.collect_until(character, vec![' ', '>']);
-                        if string.contains("=") {
-                            Some(TOKEN::ATTR(format_attr(string)))
-                        } else {
-                            Some(TOKEN::BOOL_ATTR(string))
-                        }
-                    }
+                    false => self.create_text(character),
+                    true => self.create_attribute(character),
                 }
             },
             None => None
+        }
+    }
+
+    pub fn create_tag_name(&mut self) -> Option<TOKEN> {
+        self.inner_tag = true;
+        // TAG_START or END_TAG_START
+        if let Some(true) = self.is_next(&vec!['/']) {
+            self.source.next();
+            let string = self.collect_until(' ', vec![' ', '>']);
+            return Some(TOKEN::END_TAG_START(string))
+        }
+        let string = self.collect_until(' ', vec![' ', '>']);
+        Some(TOKEN::TAG_START(string))
+    }
+
+    pub fn create_tag_end(&mut self) -> Option<TOKEN> {
+        self.inner_tag = false;
+        // TAG_END
+        Some(TOKEN::TAG_END)
+    }
+
+    pub fn create_single_tag_end(&mut self) -> Option<TOKEN> {
+        // SINGLE_TAG_END
+        if let Some(true) = self.is_next(&vec!['>']) {
+            self.source.next();
+            self.inner_tag = false;
+            return Some(TOKEN::SINGLE_TAG_END)
+        }
+        None
+    }
+
+    pub fn create_text(&mut self, character: char) -> Option<TOKEN> {
+        let string = self.collect_until(character, vec!['<']);
+        Some(TOKEN::TEXT(string))
+    }
+
+    pub fn create_attribute(&mut self, character: char) -> Option<TOKEN> {
+        // ATTR or BOOL_ATTR
+        let string = self.collect_until(character, vec![' ', '>']);
+        if string.contains("=") {
+            Some(TOKEN::ATTR(format_attr(string)))
+        } else {
+            Some(TOKEN::BOOL_ATTR(string))
         }
     }
 
