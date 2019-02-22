@@ -1,6 +1,9 @@
 use std::str::Chars;
 use std::iter::Peekable;
 
+use std::fs::File;
+use std::io::prelude::*;
+
 #[derive(Debug)]
 #[derive(PartialEq)]
 pub enum TOKEN {
@@ -16,25 +19,61 @@ pub enum TOKEN {
 pub fn format_attr(attribute: String) -> (String, String) {
     let pair: Vec<&str> = attribute.splitn(2, "=").collect();
     let key = String::from(pair[0]);
+    let x: &[_] = &['\\', '\"']; // escape quotes and escapes
     let value = pair[1]
-        .trim_start_matches("\"") // escape quotes
-        .trim_end_matches("\"") // escape quotes
+        .trim_start_matches(x)
+        .trim_end_matches(x)
         .to_string();
     (key, value)
 }
 
 pub struct Lexer<'a> {
-    pub source: Peekable<Chars<'a>>,
+    pub source: Box<Peekable<Chars<'a>>>,
     pub inner_tag: bool
 }
 
+impl<'a> Iterator for Lexer<'a> {
+
+    type Item = TOKEN;
+
+    fn next(&mut self) -> Option<TOKEN> {
+       self.next_token()
+    }
+}
+//  &'a String
 impl<'a> Lexer<'a> {
-    pub fn new(source: &'a String) -> Lexer {
-        let mut chars = source.chars().peekable();
+    pub fn new<'b>(source: Box<&'b String>) -> Lexer<'b> {
+        let chars = source.chars().peekable();
         Lexer {
-            source: chars,
+            source: Box::new(chars),
             inner_tag: false
         } 
+    }
+
+    pub fn from<'b>(path: &str, string: Box<&'b mut String>) -> Result<Lexer<'b>, std::io::Error> {
+        match File::open(path) { //"src/lexer/index.html"
+            Ok(mut source) => {
+                match source.read_to_string(*string) {
+                    Ok(_) => {
+                        let chars = string.chars().peekable();
+                        Ok(Lexer {
+                            source: Box::new(chars),
+                            inner_tag: false 
+                        })
+                    },
+                    Err(message) => Err(message)
+                }
+            },
+            Err(message) => Err(message)
+        }
+    }
+
+    pub fn consume(&mut self) -> Vec<TOKEN> {
+        let mut tokens = vec![];
+        while let Some(cur_token) = self.next_token() {
+            tokens.push(cur_token)
+        }
+        tokens
     }
 
     pub fn next_token(&mut self) -> Option<TOKEN> {
