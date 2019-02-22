@@ -37,46 +37,6 @@ impl<'a> Iterator for Lexer<'a> {
     type Item = TOKEN;
 
     fn next(&mut self) -> Option<TOKEN> {
-       self.next_token()
-    }
-}
-//  &'a String
-impl<'a> Lexer<'a> {
-    pub fn new<'b>(source: Box<&'b String>) -> Lexer<'b> {
-        let chars = source.chars().peekable();
-        Lexer {
-            source: Box::new(chars),
-            inner_tag: false
-        } 
-    }
-
-    pub fn from<'b>(path: &str, string: Box<&'b mut String>) -> Result<Lexer<'b>, std::io::Error> {
-        match File::open(path) { //"src/lexer/index.html"
-            Ok(mut source) => {
-                match source.read_to_string(*string) {
-                    Ok(_) => {
-                        let chars = string.chars().peekable();
-                        Ok(Lexer {
-                            source: Box::new(chars),
-                            inner_tag: false 
-                        })
-                    },
-                    Err(message) => Err(message)
-                }
-            },
-            Err(message) => Err(message)
-        }
-    }
-
-    pub fn consume(&mut self) -> Vec<TOKEN> {
-        let mut tokens = vec![];
-        while let Some(cur_token) = self.next_token() {
-            tokens.push(cur_token)
-        }
-        tokens
-    }
-
-    pub fn next_token(&mut self) -> Option<TOKEN> {
         match self.eat_whitespace() {
             Some('<') => self.create_tag_name(),
             Some('>') => self.create_tag_end(), 
@@ -88,6 +48,34 @@ impl<'a> Lexer<'a> {
                 }
             },
             None => None
+        }
+    }
+}
+
+impl<'a> Lexer<'a> {
+    pub fn new<'b>(source: &'b String) -> Lexer<'b> {
+        let chars = source.chars().peekable();
+        Lexer {
+            source: Box::new(chars),
+            inner_tag: false
+        } 
+    }
+
+    pub fn from<'b>(path: &str, string: &'b mut String) -> Result<Lexer<'b>, std::io::Error> {
+        match File::open(path) {
+            Ok(mut source) => {
+                match source.read_to_string(string) {
+                    Ok(_) => {
+                        let chars = string.chars().peekable();
+                        Ok(Lexer {
+                            source: Box::new(chars),
+                            inner_tag: false 
+                        })
+                    },
+                    Err(message) => Err(message)
+                }
+            },
+            Err(message) => Err(message)
         }
     }
 

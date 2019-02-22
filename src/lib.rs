@@ -14,7 +14,7 @@ mod tests {
     #[test]
     fn it_initializes_new_lexer() {
         let source = String::from("<body><div><p>This is a paragraph</p></div></body>");
-        let lexer = Lexer::new(Box::new(&source));
+        let lexer = Lexer::new(&source);
         assert_eq!(lexer.source.collect::<String>(), source);
     }
 
@@ -33,7 +33,7 @@ mod tests {
             </body>
         </html>
         ");
-        let mut lexer = Lexer::new(Box::new(&source));
+        let mut lexer = Lexer::new(&source);
         let answers = vec![
             TOKEN::TAG_START("!DOCTYPE".to_string()),
             TOKEN::BOOL_ATTR("html".to_string()),
@@ -66,11 +66,14 @@ mod tests {
             TOKEN::END_TAG_START("html".to_string()),
             TOKEN::TAG_END
         ];
-        let mut i = 0;
-        while let Some(cur_token) = lexer.next_token() {
-            assert_eq!(cur_token, answers[i]);
-            i += 1;
+        for (idx, token) in lexer.enumerate() {
+            assert_eq!(token, answers[idx]);
         }
+        // let mut i = 0;
+        // while let Some(cur_token) = lexer.next_token() {
+        //     assert_eq!(cur_token, answers[i]);
+        //     i += 1;
+        // }
     }
 
     #[test]
@@ -108,10 +111,12 @@ mod tests {
             TOKEN::TAG_END
         ];
         let mut source = String::new();
-        let lexer = Lexer::from("src/lexer/index.html", Box::new(&mut source));
-        if let Ok(mut lexer) = lexer {
-            let tokens = lexer.consume();
-            assert_eq!(tokens, answers);
+        let path = "src/lexer/index.html";
+        if let Ok(mut lexer) = Lexer::from(path, &mut source) {
+            for token in lexer {
+                println!("{:?}", token);
+            }
+            assert!(true);
         } else {
             assert!(false);
         }
