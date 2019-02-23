@@ -1,20 +1,13 @@
+#![allow(dead_code)]
+
 use std::str::Chars;
 use std::iter::Peekable;
 
 use std::fs::File;
 use std::io::prelude::*;
 
-#[derive(Debug)]
-#[derive(PartialEq)]
-pub enum TOKEN {
-    TAG_START(String),
-    END_TAG_START(String),
-    TAG_END,
-    SINGLE_TAG_END,
-    ATTR((String, String)),
-    BOOL_ATTR(String),
-    TEXT(String)
-}
+use crate::token::TOKEN;
+
 
 pub fn format_attr(attribute: String) -> (String, String) {
     let pair: Vec<&str> = attribute.splitn(2, "=").collect();
@@ -155,5 +148,114 @@ impl<'a> Lexer<'a> {
             string.push(self.pop_char().unwrap_or_default())
         }
         string
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TOKEN;
+    use super::Lexer;
+
+    #[test]
+    fn it_initializes_new_lexer() {
+        let source = String::from("<body><div><p>This is a paragraph</p></div></body>");
+        let lexer = Lexer::new(&source);
+        assert_eq!(lexer.source.collect::<String>(), source);
+    }
+
+    #[test]
+    fn it_creates_the_correct_tokens() {
+        let source = String::from("
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <link href=\"css/styles.css\" rel=\"stylesheet\" />
+            </head>
+            <body>
+                <div>
+                    <p hidden class=\"center\">This is a paragraph</p>
+                </div>
+            </body>
+        </html>
+        ");
+        let lexer = Lexer::new(&source);
+        let answers = vec![
+            TOKEN::TAG_START("!DOCTYPE".to_string()),
+            TOKEN::BOOL_ATTR("html".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("html".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("head".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("link".to_string()),
+            TOKEN::ATTR(("href".to_string(), "css/styles.css".to_string())),
+            TOKEN::ATTR(("rel".to_string(), "stylesheet".to_string())),
+            TOKEN::SINGLE_TAG_END,
+            TOKEN::END_TAG_START("head".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("body".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("div".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("p".to_string()),
+            TOKEN::BOOL_ATTR("hidden".to_string()),
+            TOKEN::ATTR(("class".to_string(), "center".to_string())),
+            TOKEN::TAG_END,
+            TOKEN::TEXT("This is a paragraph".to_string()),
+            TOKEN::END_TAG_START("p".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::END_TAG_START("div".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::END_TAG_START("body".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::END_TAG_START("html".to_string()),
+            TOKEN::TAG_END
+        ];
+        for (idx, token) in lexer.enumerate() {
+            assert_eq!(token, answers[idx]);
+        }
+    }
+
+    #[test]
+    fn it_consumes_an_entire_string_into_tokens() {
+        let answers = vec![
+            TOKEN::TAG_START("!DOCTYPE".to_string()),
+            TOKEN::BOOL_ATTR("html".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("html".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("head".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("link".to_string()),
+            TOKEN::ATTR(("href".to_string(), "css/styles.css".to_string())),
+            TOKEN::ATTR(("rel".to_string(), "stylesheet".to_string())),
+            TOKEN::SINGLE_TAG_END,
+            TOKEN::END_TAG_START("head".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("body".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("div".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::TAG_START("p".to_string()),
+            TOKEN::BOOL_ATTR("hidden".to_string()),
+            TOKEN::ATTR(("class".to_string(), "center".to_string())),
+            TOKEN::TAG_END,
+            TOKEN::TEXT("This is a paragraph".to_string()),
+            TOKEN::END_TAG_START("p".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::END_TAG_START("div".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::END_TAG_START("body".to_string()),
+            TOKEN::TAG_END,
+            TOKEN::END_TAG_START("html".to_string()),
+            TOKEN::TAG_END
+        ];
+        let mut source = String::new();
+        let path = "src/index.html";
+        if let Ok(lexer) = Lexer::from(path, &mut source) {
+            assert_eq!(lexer.collect::<Vec<TOKEN>>(), answers);
+        } else {
+            assert!(false);
+        }
     }
 }
