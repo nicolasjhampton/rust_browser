@@ -6,7 +6,7 @@ use std::iter::Peekable;
 use std::fs::File;
 use std::io::prelude::*;
 
-use crate::token::TOKEN;
+use crate::Token::TOKEN;
 
 
 pub fn format_attr(attribute: String) -> (String, String) {

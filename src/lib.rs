@@ -1,5 +1,7 @@
-mod token;
+mod Token;
 mod Lexer;
+mod Node;
+mod Document;
 mod Parser;
 
 

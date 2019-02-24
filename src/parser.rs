@@ -1,7 +1,9 @@
 #![allow(dead_code)]
 
+use crate::Token::TOKEN;
 use crate::Lexer::Lexer;
-use crate::token::TOKEN;
+use crate::Document::Document;
+use crate::Node::*;
 
 pub struct Parser {
     pub tokens: Vec<TOKEN>
@@ -11,6 +13,28 @@ impl Parser {
     pub fn new(tokens: Vec<TOKEN>) -> Parser {
         Parser {
             tokens
+        }
+    }
+
+    pub fn parse(&mut self) -> Document {
+        let document = Document::new();
+        if let Some(token) = self.tokens.pop() {
+            let node = self.parse_token(token);
+            document.appendChild(node);
+        }
+        document
+    }
+
+    pub fn parse_token(&mut self, token: TOKEN) -> LiveDOMNode {
+        match token {
+            TOKEN::TAG_START(tagName) => ,
+            TOKEN::END_TAG_START(tagName) => ,
+            TOKEN::TAG_END => ,
+            TOKEN::SINGLE_TAG_END => ,
+            TOKEN::ATTR((key, value)) => ,
+            TOKEN::BOOL_ATTR(attribute) => ,
+            TOKEN::TEXT(text) => ,
+            None => 
         }
     }
 
