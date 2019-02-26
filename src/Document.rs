@@ -1,33 +1,36 @@
 use crate::Node::*;
-use crate::Token::TOKEN;
 
 pub struct Document {
-    pub parentNode: Option<LiveDOMNode>, // Box<dyn NodeInterface>
-    pub childNodes: NodeList
+    childNodes: Vec<Box<dyn Children>>
 }
 
-impl<'a> Node<'a> for Document {
-    const nodeName: DOMString<'a> = "#document";
-    const nodeValue: Option<DOMString<'a>> = None;
-    const nodeType: NodeType = NodeType::DOCUMENT_NODE;
+impl Node for Document {
+    fn nodeType(&self) -> NodeType {
+        NodeType::DOCUMENT_NODE
+    }
+
+    fn nodeName(&self) -> DOMString {
+        String::from("#document")
+    }
 }
 
-impl NodeInterface for Document {
-    // fn removeChild(&mut self, node: Box<dyn NodeInterface>) -> Result<(), String> {
-    //     Ok(())
+impl Parent for Document {
+    // fn childNodes(&self) -> Vec<Box<dyn Children>> {
+    //     self.childNodes
     // }
 
-    fn appendChild(&mut self, node: LiveDOMNode) -> Option<&LiveDOMNode> {
+    fn appendChild(&mut self, node: Box<dyn Children>) -> Option<&Box<dyn Children>> {
         self.childNodes.push(node);
         self.childNodes.last()
     }
 }
 
 impl Document {
-    pub fn new() -> Document {
-        Document {
-            parentNode: None,
-            childNodes: vec![]
-        }
+    pub fn new() -> Box<Document> {
+        Box::new(
+            Document {
+                childNodes: vec![]
+            }
+        )
     }
 }

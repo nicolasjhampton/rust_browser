@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 
-use crate::Token::TOKEN;
+pub type DOMString = String;
 
-pub type DOMString<'a> = &'a str;
-pub type LiveDOMNode = Box<dyn NodeInterface>;
-pub type NodeList = Vec<LiveDOMNode>;
+pub type LiveDOMNode = Box<Node>;
+pub type NodeList<C: Children> = Vec<C>;
 
 pub enum NodeType {
     ELEMENT_NODE = 1,
@@ -21,15 +20,22 @@ pub enum NodeType {
     NOTATION_NODE
 }
 
-pub trait Node<'a> {
-    const nodeName: DOMString<'a>;
-    const nodeValue: Option<DOMString<'a>>;
-    const nodeType: NodeType;
-    // const parentNode: Option<Box<Node>>;
-    // const childNodes: NodeList;
+pub trait Node {
+    fn nodeType(&self) -> NodeType;
+    fn nodeName(&self) -> DOMString;
 }
 
-pub trait NodeInterface {
-    // fn removeChild(&mut self, node: Box<dyn NodeInterface>) -> Result<(), String>;
-    fn appendChild(&mut self, node: LiveDOMNode) -> Option<&LiveDOMNode>;
+pub trait NodeValue: Node {
+    fn nodeValue(&self) -> DOMString;
 }
+
+pub trait Children: Node {
+    // fn parentNode(&self) -> Option<Box<dyn Parent>>;
+}
+
+pub trait Parent: Node {
+    // fn childNodes(&self) -> Vec<Box<dyn Children>>;
+    // fn removeChild(&mut self, node: Box<dyn NodeInterface>) -> Result<(), String>;
+    fn appendChild<'a>(&mut self, node: Box<dyn Children>) -> Option<&Box<dyn Children>>;
+}
+
