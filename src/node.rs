@@ -2,8 +2,8 @@
 
 pub type DOMString = String;
 
-pub type LiveDOMNode = Box<Node>;
-pub type NodeList<C: Children> = Vec<C>;
+pub type LiveDOMNode = Box<dyn Node>;
+// pub type NodeList= Vec<>;
 
 pub enum NodeType {
     ELEMENT_NODE = 1,
@@ -23,10 +23,13 @@ pub enum NodeType {
 pub trait Node {
     fn nodeType(&self) -> NodeType;
     fn nodeName(&self) -> DOMString;
+    fn nodeValue(&self) -> Option<DOMString>;
+    fn childNodes(&self) -> Option<Vec<LiveDOMNode>>;
+    fn appendChild(&mut self, node: LiveDOMNode) -> Option<&LiveDOMNode>;
 }
 
 pub trait NodeValue: Node {
-    fn nodeValue(&self) -> DOMString;
+    
 }
 
 pub trait Children: Node {
@@ -36,6 +39,6 @@ pub trait Children: Node {
 pub trait Parent: Node {
     // fn childNodes(&self) -> Vec<Box<dyn Children>>;
     // fn removeChild(&mut self, node: Box<dyn NodeInterface>) -> Result<(), String>;
-    fn appendChild<'a>(&mut self, node: Box<dyn Children>) -> Option<&Box<dyn Children>>;
+    
 }
 
